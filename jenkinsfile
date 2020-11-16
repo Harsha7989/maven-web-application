@@ -1,1 +1,41 @@
 
+node
+{
+    def mavenHome = tool name:"maven3.6.3"
+    stage('CheckOutCode')
+    {
+        git branch: 'development', credentialsId: 'a0de5981-758d-4b41-abe9-218512d855f7', url: 'https://github.com/Harsha7989/maven-web-application.git'
+    }
+ stage('Build')
+ {
+     sh "${mavenHome}/bin/mvn clean package"
+ }
+ stage ('ExecuteSonarQubeReport')
+ {
+     sh "${mavenHome}/bin/mvn sonar:sonar"
+ }
+ stage ('UploadArtifactIntoNexus')
+ {
+     sh "${mavenHome}/bin/mvn deploy"
+     
+ }
+ stage ('DeployAppIntoTomcat')
+{
+   sshagent(['6b452f78-6274-4ee9-bfde-40569866e0bb'])
+{
+sh " scp -o  StrictHostKeyChecking=no target/maven-web-application.war ec2-user@15.206.84.170:/opt/tomcat/webapps/"
+
+
+}
+
+}
+ stage('SendEmailNotification')
+ {
+     mail bcc: '', body: '''Build over ..
+
+
+Regards ,
+AswarthReddy
+7989560871''', cc: 'kanr7989@gmail.com', from: '', replyTo: '', subject: 'Build over', to: 'harsha35687@gmail.com'
+ }
+}
